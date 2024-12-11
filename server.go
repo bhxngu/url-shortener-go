@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"net/http"
 	"net/url"
 
@@ -31,8 +33,11 @@ func shorternerHandler(ctx *gin.Context) {
 		return
 	}
 
+	hash := md5.Sum([]byte(body.URL))
+	shortened := base64.URLEncoding.EncodeToString(hash[:])[:6]
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"url": body.URL,
+		"shortened": shortened,
 	})
 }
 
