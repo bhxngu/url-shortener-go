@@ -61,6 +61,31 @@ func shorternerHandler(ctx *gin.Context, db *sql.DB) {
 		"shortened": shortened,
 	})
 }
+
+func redirectHandler(ctx *gin.Context, db *sql.DB) {
+	shortened := ctx.Param("shortened")
+
+	if len(shortened) != 6 {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid shortened URL",
+		})
+		return
+	}
+
+	row := db.QueryRow("SELECT url FROM shortened_urls WHERE shortened = $1", shortened)
+
+	var url string
+	err := row.Scan(&url)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"error": "Invalid shortened URL",
+		})
+		return
+	}
+
+	ctx.Redirect(http.StatusMovedPermanently, url)
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		panic("Error loading .env file")
@@ -76,6 +101,9 @@ func main() {
 	ginRouter := gin.Default()
 	ginRouter.POST("/shorten", func(ctx *gin.Context) {
 		shorternerHandler(ctx, db)
+	})
+	ginRouter.GET("/:shortened", func(ctx *gin.Context) {
+		redirectHandler(ctx, db)
 	})
 
 	ginRouter.Run(":3001")
